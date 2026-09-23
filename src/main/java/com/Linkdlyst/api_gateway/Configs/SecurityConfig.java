@@ -2,45 +2,27 @@ package com.Linkdlyst.api_gateway.Configs;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.config.annotation.web.reactive.EnableWebFluxSecurity;
+import org.springframework.security.config.web.server.ServerHttpSecurity;
+import org.springframework.security.web.server.SecurityWebFilterChain;
 
-import com.Linkdlyst.api_gateway.Utils.Filters.JWTAuthFilter;
-
-@Configuration 
-@EnableWebSecurity 
+@Configuration
+@EnableWebFluxSecurity
 public class SecurityConfig {
+    @Bean
+    public SecurityWebFilterChain securityWebFilterChain(
+            ServerHttpSecurity http) {
 
-    private final JWTAuthFilter jwtAuthFilter;
+        return http
+                .csrf(ServerHttpSecurity.CsrfSpec::disable)
+                .cors(ServerHttpSecurity.CorsSpec::disable)
+                .authorizeExchange(exchange -> exchange
+                        .pathMatchers("/auth/**")
+                        .permitAll()
 
-    public SecurityConfig(JWTAuthFilter _JwtAuthFilter){
-        jwtAuthFilter = _JwtAuthFilter;
-    }
-    
-    @Bean 
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception{
-        http.
-        csrf(csrf-> csrf.disable())
-        .cors(cors-> cors.disable())
-        .sessionManagement(session->
-            session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
-        )
-        .authorizeHttpRequests(auth-> auth.
-            requestMatchers(
-                "/v1/auth/**"
-            )
-            .permitAll()
-            .anyRequest()
-            .authenticated()
-        )
-        .addFilterBefore(
-            jwtAuthFilter, 
-            UsernamePasswordAuthenticationFilter.class    
-        );
+                        .anyExchange()
+                        .authenticated())
 
-        return http.build();
+                .build();
     }
 }
