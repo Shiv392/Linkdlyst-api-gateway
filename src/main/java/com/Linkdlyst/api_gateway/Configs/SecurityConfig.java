@@ -6,8 +6,10 @@ import org.springframework.security.config.annotation.web.reactive.EnableWebFlux
 import org.springframework.security.config.web.server.SecurityWebFiltersOrder;
 import org.springframework.security.config.web.server.ServerHttpSecurity;
 import org.springframework.security.web.server.SecurityWebFilterChain;
+import org.springframework.web.cors.CorsConfiguration;
 
 import com.Linkdlyst.api_gateway.Utils.Filters.JWTAuthFilter;
+import java.util.List;
 
 @Configuration
 @EnableWebFluxSecurity
@@ -15,7 +17,7 @@ public class SecurityConfig {
 
     private final JWTAuthFilter jwtAuthFilter;
 
-    public SecurityConfig(JWTAuthFilter _jwtAuthFilter){
+    public SecurityConfig(JWTAuthFilter _jwtAuthFilter) {
         jwtAuthFilter = _jwtAuthFilter;
     }
 
@@ -25,18 +27,42 @@ public class SecurityConfig {
 
         return http
                 .csrf(ServerHttpSecurity.CsrfSpec::disable)
-                .cors(ServerHttpSecurity.CorsSpec::disable)
-                .authorizeExchange(exchange -> exchange
-                        .pathMatchers("/auth/**")
-                        .permitAll()
+                .cors(cors -> cors
+                .configurationSource(exchange -> {
+                    CorsConfiguration config = new CorsConfiguration();
+                    config.setAllowedOrigins(
+                            List.of("http://localhost:4200")
+                    );
 
-                        .anyExchange()
-                        .authenticated())
-                .addFilterBefore(
-                    jwtAuthFilter, 
-                    SecurityWebFiltersOrder.AUTHENTICATION    
+                    config.setAllowedMethods(
+                            List.of(
+                                    "GET",
+                                    "POST",
+                                    "PUT",
+                                    "DELETE",
+                                    "PATCH",
+                                    "OPTIONS"
+                            )
+                    );
+
+                    config.setAllowedHeaders(
+                            List.of("*")
+                    );
+
+                    config.setAllowCredentials(true);
+
+                    return config;
+                })
                 )
-
+                .authorizeExchange(exchange -> exchange
+                .pathMatchers("/auth/**")
+                .permitAll()
+                .anyExchange()
+                .authenticated())
+                .addFilterBefore(
+                        jwtAuthFilter,
+                        SecurityWebFiltersOrder.AUTHENTICATION
+                )
                 .build();
     }
 }
