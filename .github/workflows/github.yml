@@ -1,0 +1,85 @@
+name: Depoly Linkdlyst API Gateway to AWS EC2
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  first-job:
+    permissions:
+      id-token: write
+      contents: read
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Show files
+        run: ls -la
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          java-version: '25'
+          distribution: 'temurin'
+
+      - name: Build project with Maven
+        run: mvn clean package
+
+      - name: Docker Build Image
+        run : docker build -t linkdlyst-api-gateway:latest .
+
+      # - name: Debug GitHub Context
+      #   run: |
+      #       echo "Repository = $GITHUB_REPOSITORY"
+      #       echo "Ref = $GITHUB_REF"
+      #       echo "Event = $GITHUB_EVENT_NAME"
+
+      # - name: Get OIDC Token Claims
+      #   uses: actions/github-script@v7
+      #   with:
+      #     script: |
+      #       const token = await core.getIDToken('sts.amazonaws.com');
+      #       const payload = JSON.parse(
+      #         Buffer.from(token.split('.')[1], 'base64url').toString()
+      #       );
+
+      #       console.log("OIDC subject:", payload.sub);
+      #       console.log("OIDC audience:", payload.aud);
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+         role-to-assume: ${{ secrets.ECR_PUSH_ROLE_SECRET }}
+         aws-region: us-east-1
+
+      - name: Login to Amazon ECR
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Tag Docker Image
+        run: |
+          docker tag linkdlyst-api-gateway:latest \
+            070443470206.dkr.ecr.us-east-1.amazonaws.com/linkdlyst-api-gateway
+
+      - name: Push Docker Image to ECR
+        run: |
+          docker push \
+            070443470206.dkr.ecr.us-east-1.amazonaws.com/linkdlyst-api-gateway
+
+
+      # - name: Deploy to EC2 using SSM
+      #   run: |
+      #     aws ssm send-command \
+      #       --instance-ids "i-0a7a58725466cbc37" \
+      #       --document-name "AWS-RunShellScript" \
+      #       --comment "Deploy latest Docker image" \
+      #       --parameters 'commands=[
+      #         "aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 070443470206.dkr.ecr.us-east-1.amazonaws.com",
+      #         "docker pull 070443470206.dkr.ecr.us-east-1.amazonaws.com/nodejs-aws-cicd:latest",
+      #         "docker rm -f nodejs-aws-cicd-container || true",
+      #         "docker run -d --name nodejs-aws-cicd-container -p 5000:5000 070443470206.dkr.ecr.us-east-1.amazonaws.com/nodejs-aws-cicd:latest"
+      #       ]' \
+      #       --region us-east-1
