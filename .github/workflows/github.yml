@@ -35,7 +35,8 @@ jobs:
         run : docker build -t linkdlyst-api-gateway:latest .
 
       - name: Check AWS Identity
-        run: aws sts get-caller-identity
+        run: |
+          aws sts get-caller-identity
 
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
