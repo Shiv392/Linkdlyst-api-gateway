@@ -28,6 +28,8 @@ jobs:
 
       - name: Build project with Maven
         run: mvn clean package
+        env:
+          jwt_secret: ${{ secrets.JWT_SECRET }}
 
       - name: Docker Build Image
         run : docker build -t linkdlyst-api-gateway:latest .
