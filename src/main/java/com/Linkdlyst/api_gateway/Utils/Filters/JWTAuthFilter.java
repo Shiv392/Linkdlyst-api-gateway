@@ -1,16 +1,15 @@
 package com.Linkdlyst.api_gateway.Utils.Filters;
 
 import java.util.Collections;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpCookie;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.ReactiveSecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.web.server.ServerWebExchange;
 import org.springframework.web.server.WebFilter;
 import org.springframework.web.server.WebFilterChain;
-
 import com.Linkdlyst.api_gateway.Utils.CustomExceptions.UnAuthorizedException;
 import com.Linkdlyst.api_gateway.Utils.Dtos.JwtContext;
 import com.Linkdlyst.api_gateway.Utils.Services.JwtService;
@@ -37,23 +36,36 @@ public class JWTAuthFilter implements WebFilter {
                 return chain.filter(exchange);
         }
 
-        String authHeader = exchange
-                .getRequest()
-                .getHeaders()
-                .getFirst("Authorization");
-        logger.info("Auth Header: "+authHeader);
+       HttpCookie http_accessTokenCookie = exchange.getRequest().getCookies().getFirst("user_access_token");
+       if(http_accessTokenCookie == null){
+        return Mono.error(new UnAuthorizedException("Invalid access"));
+       }
 
-        // Token nahi hai
-        if (authHeader == null ||
-                !authHeader.startsWith("Bearer ")) {
+       String accessToken = http_accessTokenCookie.getValue();
 
-            // return chain.filter(exchange);
-            return Mono.error(
-                new UnAuthorizedException("Invalid access")
-            );
-        }
+       logger.info("access Token: "+ accessToken);
 
-        String accessToken = authHeader.substring(7);
+       if(accessToken == null){
+        return Mono.error(new UnAuthorizedException("Invalid access"));
+       }
+
+        // String authHeader = exchange
+        //         .getRequest()
+        //         .getHeaders()
+        //         .getFirst("Authorization");
+        // logger.info("Auth Header: "+authHeader);
+
+        // // Token nahi hai
+        // if (authHeader == null ||
+        //         !authHeader.startsWith("Bearer ")) {
+
+        //     // return chain.filter(exchange);
+        //     return Mono.error(
+        //         new UnAuthorizedException("Invalid access")
+        //     );
+        // }
+
+        // String accessToken = authHeader.substring(7);
         // Token invalid hai
         if (!jwtService.isValidToken(accessToken)) {
             // exchange.getResponse()
