@@ -7,7 +7,6 @@ import org.springframework.security.config.web.server.SecurityWebFiltersOrder;
 import org.springframework.security.config.web.server.ServerHttpSecurity;
 import org.springframework.security.web.server.SecurityWebFilterChain;
 import org.springframework.web.cors.CorsConfiguration;
-
 import com.Linkdlyst.api_gateway.Utils.Filters.JWTAuthFilter;
 import java.util.List;
 
